@@ -1,15 +1,47 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { InertiaLink } from "@inertiajs/inertia-react";
 import { Link, usePage, router } from "@inertiajs/react";
-import { Pagination, Table } from "antd";
+import { Button, Pagination, Table } from "antd";
 import { useState } from "react";
 
 const PostTable = () => {
-    const { posts } = usePage().props;
-    console.log(posts);
-    // const { data } = posts;
-    // console.log(data);
+    const { posts, sort, sortBy, search } = usePage().props;
+    console.log(usePage().props);
+
     const [val, setVal] = useState(0);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortedInfo, setSortedInfo] = useState({
+        order: "descend",
+        columnKey: "",
+    });
+    const [sortQuery, setSortQuery] = useState({
+        sort: sort ? sort : "",
+        sortBy: sortBy ? sortBy : "",
+    });
+
+    const [pageQuery, setPageQuery] = useState(1);
+
+    useEffect(() => {
+        console.log(sort);
+        if (sort != null) {
+            sortOrder = "";
+            if (sortBy === "desc") {
+                var sortOrder = "descend";
+            } else if (sortBy === "asc") {
+                var sortOrder = "ascend";
+            }
+            console.log(sortOrder);
+            setSortedInfo({
+                columnKey: sort,
+                order: sortOrder,
+            });
+        }
+    }, [sort, sortBy]);
+
+    useEffect(() => {
+        console.log(sortedInfo);
+    }, [sortedInfo]);
+
     const columnPosts = [
         {
             key: "id",
@@ -23,17 +55,15 @@ const PostTable = () => {
             key: "title",
             title: "title",
             dataIndex: "title",
-            sorter: {
-                compare: (a, b) => a.title.localeCompare(b.title),
-            },
+            sorter: true,
+            defaultSortOrder: sort === "title" ? sortBy : "false",
         },
         {
             key: "description",
             title: "description",
             dataIndex: "description",
-            sorter: {
-                compare: (a, b) => a.description.localeCompare(b.description),
-            },
+            sorter: true,
+            defaultSortOrder: sort === "description" ? sortBy : "false",
         },
         {
             key: "num",
@@ -52,6 +82,48 @@ const PostTable = () => {
         },
     ];
 
+    const handleQuery = (newSort, newSortBy, newPagination) => {
+        console.log("search");
+        console.log(search);
+        console.log("searchQuery");
+        console.log(searchQuery);
+        var url = posts.path + "?";
+        if (searchQuery != "") {
+            console.log("search 1");
+            url = url + "search=" + searchQuery + "&";
+        } else if (search != "") {
+            console.log("search 2");
+            url = url + "search=" + search + "&";
+        }
+
+        if (newSort != null) {
+            console.log("newSort");
+            url = url + "sort=" + newSort + "&" + "sortBy=" + newSortBy + "&";
+        } else if (sortQuery.sort != "") {
+            url =
+                url +
+                "sort=" +
+                sortQuery.sort +
+                "&" +
+                "sortBy=" +
+                sortQuery.sortBy +
+                "&";
+        }
+
+        if (pageQuery != "" && newPagination == null) {
+            url = url + "page=" + pageQuery + "&";
+        } else if (newPagination != "") {
+            url = url + "page=" + newPagination + "&";
+        }
+        console.log(url);
+
+        router.visit(url, { only: ["posts", "sort", "sortBy", "search"] });
+    };
+
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value);
+    };
+
     const addToButton = () => {
         setVal(val + 1);
     };
@@ -60,15 +132,20 @@ const PostTable = () => {
         setVal(val - 1);
     };
 
-    const fetchRecords = (page) => {
-        var url = posts.path + "?page=" + page;
-        router.visit(url, { only: ["posts"] });
+    const handleSort = (pagination, filter, sort) => {
+        if (sort.columnKey) {
+            handleQuery(sort.columnKey, sort.order, pagination.current);
+        } else {
+            handleQuery(null, null, pagination.current);
+        }
     };
 
     return (
         <div>
             <div className="container mx-auto">
-                <h1 className="mb-8 text-3xl font-bold text-center">Post</h1>
+                <h1 className="mb-8 text-3xl font-bold text-center">
+                    {sortedInfo.columnKey}
+                </h1>
                 <div className="flex items-center justify-between mb-6">
                     <InertiaLink
                         className="px-6 py-2 text-white bg-green-500 rounded-md focus:outline-none"
@@ -77,16 +154,21 @@ const PostTable = () => {
                         Create Post
                     </InertiaLink>
                 </div>
+                <input className="border-2" onChange={handleSearch}></input>
+                <button onClick={() => handleQuery(null, null, null)}>
+                    search
+                </button>
                 <Table
                     dataSource={posts.data}
                     columns={columnPosts}
+                    onChange={handleSort}
                     pagination={{
                         total: posts.total,
                         current: posts.current_page,
                         pageSize: posts.per_page,
-                        onChange: (page) => {
-                            fetchRecords(page);
-                        },
+                        // onChange: (page) => {
+                        //     fetchRecords(page);
+                        // },
                     }}
                 />
 

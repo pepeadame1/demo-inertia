@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Models\Post;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class PostController extends Controller
@@ -102,14 +102,50 @@ class PostController extends Controller
         return Redirect::route('posts.index');
     }
 
-    public function table(){
-        // $posts = Post::all();
-        $posts = Post::paginate(1)->through(function ($post){
+    public function table(Request $request){
+        $search = "";
+        $sort = "";
+        $sortBy="";
+        $sortOrder="";
+        if($request->input('search')){
+            $search = $request->input('search');
+            error_log($search);
+        }
+        if($request->input('sort')!='undefined'){
+            $sort = $request->input('sort');
+            error_log($request->input('sortBy'));
+            // $sortBy = $request->input('sortBy');
+            if($request->input('sortBy')=='ascend'){
+                $sortBy = 'asc';
+                $sortOrder = $request->input('sortBy');
+            }else if($request->input('sortBy')=='descend'){
+                error_log("waw");
+                $sortBy = 'desc';
+                $sortOrder = $request->input('sortBy');
+            }
+        }
+     
+        // $posts = Post::where('title','like','%'.$search. '%')->orderBy($sort)->paginate(1)->through(function ($post){
+        //     return [
+        //         'title' => $post->title,
+        //         'description' => $post->description
+        //     ];
+        // });
+        $posts = Post::where('title','like','%'.$search. '%');
+        if($request->input('sort') && $request->input('sortBy')!='undefined' && $request->input('sortBy')!='false'){
+            $posts=$posts->orderBy($sort,$sortBy);
+        }
+        $posts=$posts->paginate(1)->through(function ($post){
             return [
                 'title' => $post->title,
                 'description' => $post->description
             ];
         });
-        return Inertia::render('Post/PostTable', ['posts' => $posts]);
+         
+      if (request()->expectsJson()){
+            return $posts;
+        };
+
+        return Inertia::render('Post/PostTable', ['posts' => $posts,'sort'=>$sort,'sortBy'=>$sortOrder,'search'=>$search]);
     }
 }
