@@ -1,15 +1,15 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { InertiaLink } from "@inertiajs/inertia-react";
 import { Link, usePage, router } from "@inertiajs/react";
 import { Button, Pagination, Table } from "antd";
-import { useState } from "react";
+import debounce from "lodash.debounce";
 
 const PostTable = () => {
     const { posts, sort, sortBy, search } = usePage().props;
     console.log(usePage().props);
 
     const [val, setVal] = useState(0);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchQuery, setSearchQuery] = useState(search ? search : "");
     const [sortedInfo, setSortedInfo] = useState({
         order: "descend",
         columnKey: "",
@@ -65,49 +65,26 @@ const PostTable = () => {
             sorter: true,
             defaultSortOrder: sort === "description" ? sortBy : "false",
         },
-        {
-            key: "num",
-            title: "num",
-            render: () => <p>{val}</p>,
-        },
-        {
-            key: "mod",
-            title: "mod",
-            render: () => (
-                <div className="flex flex-col">
-                    <button onClick={addToButton}>+</button>
-                    <button onClick={subToButton}>-</button>
-                </div>
-            ),
-        },
     ];
 
-    const handleQuery = (newSort, newSortBy, newPagination) => {
-        console.log("search");
-        console.log(search);
+    const handleQuery = (newSort, newSortBy, newPagination, newSearch) => {
         console.log("searchQuery");
-        console.log(searchQuery);
+        console.log(newSearch);
         var url = posts.path + "?";
-        if (searchQuery != "") {
+        if (newSearch != "") {
             console.log("search 1");
-            url = url + "search=" + searchQuery + "&";
-        } else if (search != "") {
-            console.log("search 2");
-            url = url + "search=" + search + "&";
+            url = url + "search=" + newSearch + "&";
         }
+        // } else if (search != "") {
+        //     console.log("search 2");
+        //     url = url + "search=" + search + "&";
+        // }
 
         if (newSort != null) {
             console.log("newSort");
             url = url + "sort=" + newSort + "&" + "sortBy=" + newSortBy + "&";
-        } else if (sortQuery.sort != "") {
-            url =
-                url +
-                "sort=" +
-                sortQuery.sort +
-                "&" +
-                "sortBy=" +
-                sortQuery.sortBy +
-                "&";
+        } else if (sort != "") {
+            url = url + "sort=" + sort + "&" + "sortBy=" + sortBy + "&";
         }
 
         if (pageQuery != "" && newPagination == null) {
@@ -122,21 +99,16 @@ const PostTable = () => {
 
     const handleSearch = (e) => {
         setSearchQuery(e.target.value);
+        handleQuery("", "", "", e.target.value);
     };
 
-    const addToButton = () => {
-        setVal(val + 1);
-    };
-
-    const subToButton = () => {
-        setVal(val - 1);
-    };
+    const debounceSearch = debounce(handleSearch, 500);
 
     const handleSort = (pagination, filter, sort) => {
         if (sort.columnKey) {
-            handleQuery(sort.columnKey, sort.order, pagination.current);
+            handleQuery(sort.columnKey, sort.order, pagination.current, search);
         } else {
-            handleQuery(null, null, pagination.current);
+            handleQuery("", "", pagination.current, search);
         }
     };
 
@@ -154,10 +126,14 @@ const PostTable = () => {
                         Create Post
                     </InertiaLink>
                 </div>
-                <input className="border-2" onChange={handleSearch}></input>
-                <button onClick={() => handleQuery(null, null, null)}>
-                    search
-                </button>
+                <input
+                    className="border-2"
+                    // value={search ? searchQuery : ""}
+                    onChange={
+                        // setSearchQuery(e.target.value);
+                        debounceSearch
+                    }
+                ></input>
                 <Table
                     dataSource={posts.data}
                     columns={columnPosts}

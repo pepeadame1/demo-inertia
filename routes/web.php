@@ -37,7 +37,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/table',[PostController::class,'table']);
-
+Route::get('/sstable',[PostController::class,'sstable']);
 
 Route::resource('posts',PostController::class);
 

@@ -148,4 +148,46 @@ class PostController extends Controller
 
         return Inertia::render('Post/PostTable', ['posts' => $posts,'sort'=>$sort,'sortBy'=>$sortOrder,'search'=>$search]);
     }
+
+    public function sstable(Request $request){
+        $search = "";
+        $sort = "";
+        $sortBy="";
+        $sortOrder="";
+        if($request->input('search')){
+            $search = $request->input('search');
+            error_log($search);
+        }
+        if($request->input('sort')!='undefined'){
+            $sort = $request->input('sort');
+            error_log($request->input('sortBy'));
+            // $sortBy = $request->input('sortBy');
+            if($request->input('sortBy')=='ascend'){
+                $sortBy = 'asc';
+                $sortOrder = $request->input('sortBy');
+            }else if($request->input('sortBy')=='descend'){
+                error_log("waw");
+                $sortBy = 'desc';
+                $sortOrder = $request->input('sortBy');
+            }
+        }
+     
+
+        $posts = Post::where('title','like','%'.$search. '%');
+        if($request->input('sort') && $request->input('sortBy')!='undefined' && $request->input('sortBy')!='false'){
+            $posts=$posts->orderBy($sort,$sortBy);
+        }
+        $posts=$posts->paginate(1)->through(function ($post){
+            return [
+                'title' => $post->title,
+                'description' => $post->description
+            ];
+        });
+         
+      if (request()->expectsJson()){
+            return $posts;
+        };
+
+        return Inertia::render('Post/PostTableSS', ['posts' => $posts,'sort'=>$sort,'sortBy'=>$sortOrder,'search'=>$search]);
+    }
 }
